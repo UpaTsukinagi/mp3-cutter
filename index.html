@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MP3 分割カッター</title>
+<style>
+:root{
+  --bg1:#eef9ff;
+  --bg2:#f9fdff;
+  --panel:#ffffff;
+  --panel-soft:#f3fbff;
+  --line:#cfe8f6;
+  --line-strong:#9ed4ee;
+  --text:#29485a;
+  --muted:#6f8d9d;
+  --blue:#82c9eb;
+  --blue-strong:#5ab4df;
+  --blue-soft:#dff4ff;
+  --shadow:0 14px 34px rgba(87,161,198,.14);
+}
+
+*{box-sizing:border-box}
+
+body{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  max-width:820px;
+  margin:0 auto;
+  padding:48px 18px 64px;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(186,230,252,.45), transparent 34%),
+    linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 45%,#ffffff 100%);
+  min-height:100vh;
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(158,212,238,.75);
+  border-radius:26px;
+  padding:30px;
+  background:rgba(255,255,255,.94);
+  box-shadow:var(--shadow);
+}
+
+.card::before,
+.card::after{
+  content:"";
+  position:absolute;
+  border-radius:999px;
+  pointer-events:none;
+}
+
+.card::before{
+  width:150px;
+  height:150px;
+  top:-80px;
+  right:-55px;
+  background:rgba(193,233,252,.35);
+}
+
+.card::after{
+  width:90px;
+  height:90px;
+  left:-44px;
+  bottom:-44px;
+  background:rgba(214,241,255,.45);
+}
+
+.header{
+  position:relative;
+  z-index:1;
+}
+
+.title-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.app-icon{
+  width:46px;
+  height:46px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:16px;
+  background:linear-gradient(145deg,#e5f7ff,#cceeff);
+  border:1px solid #bde4f7;
+  font-size:23px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+h1{
+  font-size:25px;
+  line-height:1.2;
+  margin:0;
+  letter-spacing:.02em;
+}
+
+p{
+  color:var(--muted);
+  line-height:1.7;
+}
+
+.description{
+  margin:10px 0 0;
+  font-size:14px;
+}
+
+.controls{
+  position:relative;
+  z-index:1;
+  margin-top:28px;
+}
+
+.controls-title{
+  font-size:14px;
+  font-weight:800;
+  margin-bottom:11px;
+  color:#4b7187;
+}
+
+.options{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.option{
+  position:relative;
+}
+
+.option input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.option label{
+  display:block;
+  text-align:center;
+  padding:13px 10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:800;
+  color:#62879b;
+  background:var(--panel-soft);
+  transition:.16s ease;
+  user-select:none;
+}
+
+.option label:hover{
+  border-color:var(--line-strong);
+  background:#ebf9ff;
+  transform:translateY(-1px);
+}
+
+.option input:focus-visible + label{
+  outline:3px solid rgba(90,180,223,.22);
+  outline-offset:2px;
+}
+
+.option input:checked + label{
+  border-color:var(--blue);
+  background:linear-gradient(180deg,#dff4ff,#cceeff);
+  color:#2f6681;
+  box-shadow:0 5px 14px rgba(90,180,223,.16);
+}
+
+.drop{
+  position:relative;
+  z-index:1;
+  display:block;
+  border:2px dashed #aadbf2;
+  border-radius:20px;
+  padding:38px 22px;
+  text-align:center;
+  cursor:pointer;
+  margin-top:22px;
+  background:linear-gradient(180deg,#f8fdff,#eefaff);
+  transition:.18s ease;
+}
+
+.drop:hover{
+  border-color:#78c4e8;
+  background:#ebf9ff;
+  transform:translateY(-1px);
+}
+
+.drop strong{
+  display:inline-block;
+  font-size:16px;
+  color:#3f7089;
+  margin-bottom:5px;
+}
+
+.drop::before{
+  content:"♫";
+  display:block;
+  width:44px;
+  height:44px;
+  line-height:44px;
+  margin:0 auto 12px;
+  border-radius:50%;
+  background:#dff4ff;
+  color:#59abd3;
+  font-size:22px;
+  font-weight:700;
+}
+
+#status{
+  position:relative;
+  z-index:1;
+  margin:18px 2px 0;
+  padding:12px 14px;
+  border-radius:13px;
+  background:#f4fbff;
+  border:1px solid #d9eef8;
+  color:#6a8797;
+  font-size:13px;
+}
+
+button{
+  min-width:82px;
+  padding:10px 16px;
+  border:1px solid #79c4e8;
+  border-radius:12px;
+  background:linear-gradient(180deg,#8fd2f1,#72c2e8);
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:800;
+  box-shadow:0 4px 10px rgba(86,170,211,.16);
+  transition:.15s ease;
+}
+
+button:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.02);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:focus-visible{
+  outline:3px solid rgba(90,180,223,.24);
+  outline-offset:2px;
+}
+
+.row{
+  position:relative;
+  z-index:1;
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:center;
+  border:1px solid #d7edf8;
+  border-radius:16px;
+  padding:14px 15px;
+  margin-top:10px;
+  background:#fbfeff;
+}
+
+.row strong{
+  color:#41687d;
+  font-size:14px;
+  word-break:break-all;
+}
+
+.small{
+  margin-top:3px;
+  font-size:12px;
+  color:#89a1ad;
+}
+
+#result{
+  position:relative;
+  z-index:1;
+  margin-top:24px;
+}
+
+.note{
+  position:relative;
+  z-index:1;
+  margin-top:18px;
+  padding-top:15px;
+  border-top:1px solid #e0f0f7;
+  font-size:11px;
+  line-height:1.75;
+  color:#93a9b4;
+}
+
+@media (max-width:520px){
+  body{
+    padding:24px 12px 40px;
+  }
+
+  .card{
+    padding:22px 16px;
+    border-radius:22px;
+  }
+
+  h1{
+    font-size:21px;
+  }
+
+  .app-icon{
+    width:42px;
+    height:42px;
+    border-radius:14px;
+  }
+
+  .options{
+    gap:7px;
+  }
+
+  .option label{
+    padding:12px 5px;
+    font-size:14px;
+  }
+
+  .drop{
+    padding:30px 14px;
+  }
+
+  .row{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .row button{
+    width:100%;
+  }
+}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="header">
+  <div class="title-row">
+    <div class="app-icon" aria-hidden="true">♪</div>
+    <h1>MP3 分割カッター</h1>
+  </div>
+  <p class="description">15分・30分・1時間のいずれかでMP3を分割します。音声は外部に送信せず、このブラウザ内だけで処理します。</p>
+</div>
+
+<div class="controls">
+  <div class="controls-title">分割する長さ</div>
+  <div class="options" role="radiogroup" aria-label="分割する長さ">
+    <div class="option">
+      <input id="m15" type="radio" name="split" value="900">
+      <label for="m15">15分</label>
+    </div>
+    <div class="option">
+      <input id="m30" type="radio" name="split" value="1800">
+      <label for="m30">30分</label>
+    </div>
+    <div class="option">
+      <input id="m60" type="radio" name="split" value="3600" checked>
+      <label for="m60">1時間</label>
+    </div>
+  </div>
+</div>
+
+<label class="drop">
+<strong>MP3ファイルを選ぶ</strong><br>
+<span class="small">クリックして .mp3 を選択</span>
+<input id="file" type="file" accept=".mp3,audio/mpeg" hidden>
+</label>
+
+<p id="status">分割時間を選んで、MP3ファイルを選択してください。</p>
+<div id="result"></div>
+
+<div class="note">
+※ MP3フレームの境界で分割するため、指定時間より数ミリ秒ほど短くなる場合があります。<br>
+※ 再エンコードしないため、音質は変わりません。
+</div>
+</div>
+
+<script>
+const input=document.getElementById('file');
+const status=document.getElementById('status');
+const result=document.getElementById('result');
+
+function selectedSplit(){
+  return Number(document.querySelector('input[name="split"]:checked').value);
+}
+
+function splitLabel(seconds){
+  if(seconds===900)return '15分';
+  if(seconds===1800)return '30分';
+  return '1時間';
+}
+
+function fmt(sec){
+  sec=Math.max(0,Math.floor(sec));
+  const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function parseID3v2(bytes){
+  if(bytes.length<10)return 0;
+  if(bytes[0]!==0x49||bytes[1]!==0x44||bytes[2]!==0x33)return 0;
+  const size=((bytes[6]&0x7f)<<21)|((bytes[7]&0x7f)<<14)|((bytes[8]&0x7f)<<7)|(bytes[9]&0x7f);
+  const footer=(bytes[5]&0x10)?10:0;
+  return Math.min(bytes.length,10+size+footer);
+}
+
+function frameInfo(bytes,p){
+  if(p+4>bytes.length)return null;
+  const b1=bytes[p],b2=bytes[p+1],b3=bytes[p+2];
+  if(b1!==0xff||(b2&0xe0)!==0xe0)return null;
+
+  const versionBits=(b2>>3)&3,layerBits=(b2>>1)&3;
+  if(versionBits===1||layerBits!==1)return null;
+
+  const bitrateIndex=(b3>>4)&15,sampleIndex=(b3>>2)&3,padding=(b3>>1)&1;
+  if(bitrateIndex===0||bitrateIndex===15||sampleIndex===3)return null;
+
+  let sampleRates,bitrates,samplesPerFrame,coef,version;
+
+  if(versionBits===3){
+    version=1;
+    sampleRates=[44100,48000,32000];
+    bitrates=[0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0];
+    samplesPerFrame=1152;
+    coef=144000;
+  }else if(versionBits===2){
+    version=2;
+    sampleRates=[22050,24000,16000];
+    bitrates=[0,8,16,24,32,40,48,56,64,80,96,112,128,144,160,0];
+    samplesPerFrame=576;
+    coef=72000;
+  }else{
+    version=2.5;
+    sampleRates=[11025,12000,8000];
+    bitrates=[0,8,16,24,32,40,48,56,64,80,96,112,128,144,160,0];
+    samplesPerFrame=576;
+    coef=72000;
+  }
+
+  const sr=sampleRates[sampleIndex];
+  const br=bitrates[bitrateIndex];
+  const len=Math.floor((coef*br)/sr)+padding;
+
+  if(len<24||p+len>bytes.length)return null;
+
+  return {
+    version,
+    sampleRate:sr,
+    frameLength:len,
+    duration:samplesPerFrame/sr
+  };
+}
+
+function compatible(a,b){
+  return a&&b&&a.version===b.version&&a.sampleRate===b.sampleRate;
+}
+
+function findFirstFrame(bytes,start){
+  const limit=Math.min(bytes.length-8,start+1024*1024);
+  for(let p=start;p<limit;p++){
+    const a=frameInfo(bytes,p);
+    if(!a)continue;
+    const b=frameInfo(bytes,p+a.frameLength);
+    if(compatible(a,b))return p;
+  }
+  return -1;
+}
+
+async function processFile(){
+  const file=input.files[0];
+  if(!file)return;
+
+  const SPLIT=selectedSplit();
+
+  result.innerHTML='';
+  status.textContent=`${splitLabel(SPLIT)}ごとに解析中…`;
+
+  let buffer;
+  try{
+    buffer=await file.arrayBuffer();
+  }catch{
+    status.textContent='ファイルを読み込めませんでした。';
+    return;
+  }
+
+  const bytes=new Uint8Array(buffer);
+  const prefix=parseID3v2(bytes);
+  const first=findFirstFrame(bytes,prefix);
+
+  if(first<0){
+    status.textContent='MP3を解析できませんでした。';
+    return;
+  }
+
+  let p=first,total=0,startOffset=first,startTime=0,lastGood=first;
+  const segs=[];
+
+  while(p+4<=bytes.length){
+    let info=frameInfo(bytes,p);
+
+    if(!info){
+      let found=false;
+      for(let q=p+1;q<Math.min(bytes.length-4,p+4096);q++){
+        const t=frameInfo(bytes,q);
+        if(t){
+          p=q;
+          info=t;
+          found=true;
+          break;
+        }
+      }
+      if(!found)break;
+    }
+
+    if((total-startTime)+info.duration>SPLIT && p>startOffset){
+      segs.push({
+        startOffset,
+        endOffset:p,
+        startTime,
+        endTime:total
+      });
+      startOffset=p;
+      startTime=total;
+    }
+
+    total+=info.duration;
+    p+=info.frameLength;
+    lastGood=p;
+  }
+
+  if(lastGood>startOffset){
+    segs.push({
+      startOffset,
+      endOffset:lastGood,
+      startTime,
+      endTime:total
+    });
+  }
+
+  let suffixStart=bytes.length;
+
+  if(bytes.length>=128){
+    const n=bytes.length-128;
+    if(bytes[n]===0x54&&bytes[n+1]===0x41&&bytes[n+2]===0x47){
+      suffixStart=n;
+    }
+  }
+
+  status.textContent=`${fmt(total)} / ${splitLabel(SPLIT)}ごとに ${segs.length}ファイルへ分割できます。`;
+
+  const base=file.name.replace(/\.mp3$/i,'')||'audio';
+
+  segs.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='row';
+
+    const info=document.createElement('div');
+
+    const num=String(i+1).padStart(3,'0');
+    const name=`${base}_${num}.mp3`;
+
+    const title=document.createElement('strong');
+    title.textContent=name;
+
+    const timing=document.createElement('div');
+    timing.className='small';
+    timing.textContent=`${fmt(s.startTime)} ～ ${fmt(s.endTime)}`;
+
+    info.append(title,timing);
+
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent='保存';
+
+    btn.addEventListener('click',()=>{
+      const parts=[];
+
+      if(prefix>0){
+        parts.push(file.slice(0,prefix));
+      }
+
+      parts.push(file.slice(s.startOffset,s.endOffset));
+
+      if(suffixStart<file.size){
+        parts.push(file.slice(suffixStart));
+      }
+
+      const blob=new Blob(parts,{type:'audio/mpeg'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+
+      a.href=url;
+      a.download=name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+    });
+
+    row.append(info,btn);
+    result.appendChild(row);
+  });
+}
+
+input.addEventListener('change',processFile);
+
+document.querySelectorAll('input[name="split"]').forEach(radio=>{
+  radio.addEventListener('change',()=>{
+    if(input.files[0]){
+      processFile();
+    }
+  });
+});
+</script>
+</body>
+</html>
