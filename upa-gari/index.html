@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>うぱ狩り</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+  :root{
+    --sky-top:#E8E1FB;
+    --sky-mid:#DCEAFB;
+    --sky-bot:#CFF2ED;
+    --ink:#4A4066;
+    --lavender:#B79BE8;
+    --aqua:#6FC3D6;
+    --gold:#F0B429;
+    --gold-deep:#C6820A;
+    --pink:#F3A8C8;
+    --red:#F28BA4;
+    --red-deep:#E0567A;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","M PLUS Rounded 1c","Arial Rounded MT Bold","Yu Gothic",sans-serif;
+    background:linear-gradient(180deg,#F1ECFF,#DCEAFB 55%,#CFF2ED);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    overflow:hidden;
+    color:var(--ink);
+  }
+  #stage-wrap{position:relative;width:min(480px,96vw);height:min(760px,92vh);border-radius:32px;overflow:hidden;box-shadow:0 24px 60px rgba(120,100,180,0.28);background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-bot) 100%);touch-action:none;user-select:none;}
+  #hud{position:absolute;top:0;left:0;right:0;padding:16px 18px 10px;display:flex;justify-content:space-between;align-items:flex-start;z-index:20;pointer-events:none;}
+  .hud-pill{background:rgba(255,255,255,0.85);border-radius:20px;padding:8px 16px;font-weight:700;box-shadow:0 4px 12px rgba(120,100,180,0.18);display:flex;flex-direction:column;line-height:1.15;}
+  .hud-label{font-size:11px;font-weight:700;letter-spacing:1px;color:#9C8FC4}.hud-value{font-size:24px;font-weight:800;color:var(--ink)}#timer.warn .hud-value{color:#E0567A}
+  #basket{position:absolute;bottom:26px;width:118px;height:82px;z-index:15;transform:translateX(-50%);filter:drop-shadow(0 8px 10px rgba(120,100,180,0.35));}
+  .drop{position:absolute;width:64px;height:64px;z-index:10;pointer-events:none}.drop img{width:100%;height:100%;display:block}.drop.gold img{filter:drop-shadow(0 0 0 transparent)}
+  .badge{position:absolute;top:-6px;right:-6px;font-size:13px;font-weight:800;border-radius:999px;padding:1px 6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);color:#fff}.badge.gold-badge{background:var(--gold-deep)}.badge.red-badge{background:var(--red-deep)}
+  .drop.gold::before,.drop.red::before{content:"";position:absolute;inset:-10px;border-radius:50%;z-index:-1}.drop.gold::before{background:radial-gradient(circle,rgba(240,180,41,.55) 0%,rgba(240,180,41,0) 70%)}.drop.red::before{background:radial-gradient(circle,rgba(242,139,164,.55) 0%,rgba(242,139,164,0) 70%)}
+  .floater{position:absolute;font-weight:800;font-size:20px;color:var(--ink);z-index:25;pointer-events:none;animation:floatUp .9s ease-out forwards}@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-46px) scale(1.15)}}
+  .overlay{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;background:linear-gradient(180deg,rgba(232,225,251,.92),rgba(207,242,237,.94));gap:16px}.overlay.hidden{display:none}.overlay h1{margin:0;font-size:30px;color:var(--ink);letter-spacing:1px}.overlay .hero-img{width:120px;height:120px;filter:drop-shadow(0 10px 16px rgba(120,100,180,.3))}.overlay p{margin:0;font-size:14px;line-height:1.7;color:#6C5F91;max-width:280px}
+  .rule-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.rule-swatch{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:800;box-shadow:0 3px 6px rgba(0,0,0,.15)}.swatch-normal{background:var(--lavender)}.swatch-gold{background:var(--gold-deep)}.swatch-red{background:var(--red-deep)}
+  button.primary-btn{margin-top:6px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--lavender),var(--aqua));color:#fff;font-family:inherit;font-weight:800;font-size:17px;padding:14px 40px;border-radius:999px;box-shadow:0 10px 20px rgba(120,100,180,.4);transition:transform .15s ease}button.primary-btn:active{transform:scale(.96)}
+  .score-final{font-size:56px;font-weight:800;color:var(--ink);line-height:1}.score-final small{display:block;font-size:14px;font-weight:700;color:#8E7CC3;margin-top:6px}
+  #basin-line{position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(180deg,rgba(207,242,237,0),rgba(180,225,220,.55));z-index:5;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="basin-line"></div>
+  <div id="hud">
+    <div class="hud-pill"><span class="hud-label">SCORE</span><span class="hud-value" id="score-val">0</span></div>
+    <div class="hud-pill" id="timer"><span class="hud-label">TIME</span><span class="hud-value" id="time-val">30</span></div>
+  </div>
+  <svg id="basket" viewBox="0 0 118 82" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="basketGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C9AEEF"/><stop offset="100%" stop-color="#8FD3E6"/></linearGradient></defs><path d="M8 26 L110 26 L96 74 Q59 84 22 74 Z" fill="url(#basketGrad)" stroke="#6B5B95" stroke-width="4" stroke-linejoin="round"/><path d="M8 26 Q59 42 110 26" fill="none" stroke="#6B5B95" stroke-width="4" stroke-linecap="round"/><path d="M18 34 Q59 48 100 34" fill="none" stroke="#EFE6FF" stroke-width="3" opacity="0.7"/><path d="M24 46 Q59 58 94 46" fill="none" stroke="#EFE6FF" stroke-width="3" opacity="0.5"/></svg>
+  <div id="play-area" style="position:absolute;inset:0;overflow:hidden;"></div>
+  <div class="overlay" id="start-overlay">
+    <img class="hero-img" src="upa.svg" alt="うぱ">
+    <h1>うぱ狩り</h1>
+    <p>落ちてくる「うぱ」をかごでキャッチ!<br>マウス操作(スマホはドラッグ)でかごを動かそう。制限時間は30秒。</p>
+    <div class="rule-row"><span class="rule-swatch swatch-normal">1</span> ふつうのうぱ = 1ポイント</div>
+    <div class="rule-row"><span class="rule-swatch swatch-gold">3</span> 金のうぱ = 3ポイント</div>
+    <div class="rule-row"><span class="rule-swatch swatch-red">+3</span> 赤のうぱ = 時間+3秒</div>
+    <button class="primary-btn" id="start-btn">スタート</button>
+  </div>
+  <div class="overlay hidden" id="end-overlay"><h1>タイムアップ!</h1><div class="score-final" id="final-score">0<small>うぱ</small></div><button class="primary-btn" id="restart-btn">もう一回</button></div>
+</div>
+<script>
+(function(){
+  const UPA_SRC="upa.svg",stage=document.getElementById('stage-wrap'),playArea=document.getElementById('play-area'),basket=document.getElementById('basket'),scoreVal=document.getElementById('score-val'),timeVal=document.getElementById('time-val'),timerPill=document.getElementById('timer'),startOverlay=document.getElementById('start-overlay'),endOverlay=document.getElementById('end-overlay'),startBtn=document.getElementById('start-btn'),restartBtn=document.getElementById('restart-btn'),finalScore=document.getElementById('final-score');
+  let stageW=0,stageH=0,basketX=0;const basketW=118,basketH=82;let score=0,timeLeft=30,running=false,drops=[],dropId=0,spawnTimer=0,lastTs=0,countdownTimer=null,rafId=null;
+  function sizeStage(){const r=stage.getBoundingClientRect();stageW=r.width;stageH=r.height;if(basketX===0)basketX=stageW/2;positionBasket()}window.addEventListener('resize',sizeStage);
+  function positionBasket(){const c=Math.max(basketW/2,Math.min(stageW-basketW/2,basketX));basketX=c;basket.style.left=c+'px'}function pointerMove(clientX){const r=stage.getBoundingClientRect();basketX=clientX-r.left;positionBasket()}
+  stage.addEventListener('mousemove',e=>{if(running)pointerMove(e.clientX)});stage.addEventListener('touchmove',e=>{if(running&&e.touches.length>0){pointerMove(e.touches[0].clientX);e.preventDefault()}},{passive:false});stage.addEventListener('touchstart',e=>{if(running&&e.touches.length>0)pointerMove(e.touches[0].clientX)});
+  function pickType(){const roll=Math.random();if(roll<.12)return'gold';if(roll<.27)return'red';return'normal'}
+  function spawnDrop(){const type=pickType(),el=document.createElement('div');el.className='drop '+type;const size=64,x=20+Math.random()*(stageW-40-size);el.style.left=x+'px';el.style.top='-70px';const img=document.createElement('img');img.src=UPA_SRC;if(type==='gold')img.style.filter='sepia(1) saturate(6) hue-rotate(-18deg) brightness(1.05)';else if(type==='red')img.style.filter='sepia(0.35) saturate(5.5) hue-rotate(-35deg) brightness(1.03)';el.appendChild(img);if(type==='gold'){const b=document.createElement('div');b.className='badge gold-badge';b.textContent='×3';el.appendChild(b)}else if(type==='red'){const b=document.createElement('div');b.className='badge red-badge';b.textContent='+3s';el.appendChild(b)}playArea.appendChild(el);drops.push({id:dropId++,el,x,y:-70,speed:(1.6+Math.random()*1.3)*(1+Math.floor(score/20)*.18),type,size,caught:false})}
+  function spawnFloater(text,x,y,color){const f=document.createElement('div');f.className='floater';f.textContent=text;f.style.left=x+'px';f.style.top=y+'px';f.style.color=color;playArea.appendChild(f);setTimeout(()=>f.remove(),900)}function updateHud(){scoreVal.textContent=score;timeVal.textContent=Math.max(0,Math.ceil(timeLeft));if(timeLeft<=10)timerPill.classList.add('warn');else timerPill.classList.remove('warn')}
+  function loop(ts){if(!running)return;if(!lastTs)lastTs=ts;const dt=Math.min(40,ts-lastTs);lastTs=ts;spawnTimer+=dt;const spawnInterval=Math.max(420,900-score*4);if(spawnTimer>spawnInterval){spawnTimer=0;spawnDrop()}const basketTop=stageH-26-(basketH*.55),basketLeft=basketX-basketW/2+10,basketRight=basketX+basketW/2-10;for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.y+=d.speed*(dt/16.7);d.el.style.top=d.y+'px';const dCenterX=d.x+d.size/2,dBottom=d.y+d.size*.85;if(!d.caught&&dBottom>=basketTop&&d.y<stageH-20&&dCenterX>basketLeft&&dCenterX<basketRight){d.caught=true;let pts=1,label='+1',color='#8E7CC3';if(d.type==='gold'){pts=3;label='+3';color='#C6820A'}if(d.type==='red'){pts=0;timeLeft+=3;label='+3s';color='#E0567A'}score+=pts;spawnFloater(label,d.x,d.y-10,color);d.el.remove();drops.splice(i,1);updateHud();continue}if(d.y>stageH+20){d.el.remove();drops.splice(i,1)}}rafId=requestAnimationFrame(loop)}
+  function startCountdown(){countdownTimer=setInterval(()=>{timeLeft-=1;updateHud();if(timeLeft<=0)endGame()},1000)}function startGame(){score=0;timeLeft=30;drops.forEach(d=>d.el.remove());drops=[];spawnTimer=0;lastTs=0;updateHud();startOverlay.classList.add('hidden');endOverlay.classList.add('hidden');running=true;startCountdown();rafId=requestAnimationFrame(loop)}function endGame(){running=false;clearInterval(countdownTimer);cancelAnimationFrame(rafId);drops.forEach(d=>d.el.remove());drops=[];finalScore.innerHTML=score+'<small>うぱ</small>';endOverlay.classList.remove('hidden')}
+  startBtn.addEventListener('click',()=>{sizeStage();startGame()});restartBtn.addEventListener('click',startGame);sizeStage();updateHud();
+})();
+</script>
+</body>
+</html>
